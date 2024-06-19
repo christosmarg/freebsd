@@ -1,0 +1,13 @@
+FBSD_1.8 {
+	audio_open;
+	audio_close;
+	audio_read;
+	audio_write;
+	audio_set_vol;
+	audio_get_vol;
+
+	midi_open;
+	midi_close;
+	midi_read;
+	midi_write;
+};
