@@ -3,6 +3,7 @@
 
 SUBDIR=	adduser \
 	arp \
+	audio \
 	binmiscctl \
 	boottrace \
 	bsdconfig \
