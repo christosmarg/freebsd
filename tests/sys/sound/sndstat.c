@@ -30,8 +30,9 @@
 
 #include <sys/param.h>
 #include <sys/linker.h>
-#include <sys/sndstat.h>
 #include <sys/nv.h>
+#include <sys/sndstat.h>
+#include <sys/soundcard.h>
 
 #include <atf-c.h>
 #include <errno.h>
@@ -206,9 +207,69 @@ ATF_TC_BODY(sndstat_nv, tc)
 	close(fd);
 }
 
+ATF_TC(sndstat_udev);
+ATF_TC_HEAD(sndstat_udev, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "/dev/sndstat userdev interface test");
+}
+
+ATF_TC_BODY(sndstat_udev, tc)
+{
+	nvlist_t *nvl, *di, *dichild;
+	struct sndstioc_nv_arg arg;
+	int fd, rc;
+
+	load_dummy();
+
+	if ((fd = open("/dev/sndstat", O_WRONLY)) < 0)
+		atf_tc_skip("/dev/sndstat not found, load sound(4)");
+
+	nvl = nvlist_create(0);
+	ATF_REQUIRE(nvl != NULL);
+
+	di = nvlist_create(0);
+	ATF_REQUIRE(di != NULL);
+
+	dichild = nvlist_create(0);
+	ATF_REQUIRE(dichild != NULL);
+
+	nvlist_add_string(di, SNDST_DSPS_PROVIDER, "sndstat_udev");
+	nvlist_add_string(di, SNDST_DSPS_NAMEUNIT, "sndstat_udev");
+	nvlist_add_string(di, SNDST_DSPS_DESC, "Test Device");
+	nvlist_add_string(di, SNDST_DSPS_DEVNODE, "sndstat_udev");
+	nvlist_add_number(di, SNDST_DSPS_PCHAN, 1);
+	nvlist_add_number(di, SNDST_DSPS_RCHAN, 2);
+
+	nvlist_add_number(dichild, SNDST_DSPS_INFO_MIN_RATE, 8000);
+	nvlist_add_number(dichild, SNDST_DSPS_INFO_MAX_RATE, 96000);
+	nvlist_add_number(dichild, SNDST_DSPS_INFO_FORMATS,
+	    AFMT_S16_NE | AFMT_S24_NE | AFMT_S32_NE);
+	nvlist_add_number(dichild, SNDST_DSPS_INFO_MIN_CHN, 1);
+	nvlist_add_number(dichild, SNDST_DSPS_INFO_MAX_CHN, 2);
+
+	nvlist_add_nvlist(di, SNDST_DSPS_INFO_PLAY, dichild);
+	nvlist_add_nvlist(di, SNDST_DSPS_INFO_REC, dichild);
+
+	nvlist_append_nvlist_array(nvl, SNDST_DSPS, di);
+	ATF_REQUIRE_EQ(nvlist_error(nvl), 0);
+
+	arg.buf = nvlist_pack(nvl, &arg.nbytes);
+	ATF_REQUIRE_MSG(arg.buf != NULL, "failed to pack nvlist");
+
+	rc = ioctl(fd, SNDSTIOC_ADD_USER_DEVS, &arg);
+	free(arg.buf);
+	ATF_REQUIRE_EQ_MSG(rc, 0, "ioctl(SNDSTIOC_ADD_USER_DEVS) failed");
+
+	nvlist_destroy(di);
+	nvlist_destroy(dichild);
+	nvlist_destroy(nvl);
+	close(fd);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, sndstat_nv);
+	ATF_TP_ADD_TC(tp, sndstat_udev);
 
 	return (atf_no_error());
 }
