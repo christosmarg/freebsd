@@ -242,6 +242,11 @@ extern int snd_unit;
 extern int snd_verbose;
 extern devclass_t pcm_devclass;
 extern struct unrhdr *pcmsg_unrhdr;
+extern struct unrhdr *p_unr;
+extern struct unrhdr *vp_unr;
+extern struct unrhdr *r_unr;
+extern struct unrhdr *vr_unr;
+
 
 #ifndef DEB
 #define DEB(x)

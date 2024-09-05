@@ -65,6 +65,10 @@ static void pcm_sysinit(device_t);
  * @brief Unit number allocator for syncgroup IDs
  */
 struct unrhdr *pcmsg_unrhdr = NULL;
+struct unrhdr *p_unr = NULL;
+struct unrhdr *vp_unr = NULL;
+struct unrhdr *r_unr = NULL;
+struct unrhdr *vr_unr = NULL;
 
 void *
 snd_mtxcreate(const char *desc, const char *type)
@@ -827,11 +831,31 @@ sound_modevent(module_t mod, int type, void *data)
 		case MOD_LOAD:
 			pcm_devclass = devclass_create("pcm");
 			pcmsg_unrhdr = new_unrhdr(1, INT_MAX, NULL);
+			p_unr = new_unrhdr(0, INT_MAX, NULL);
+			vp_unr = new_unrhdr(0, INT_MAX, NULL);
+			r_unr = new_unrhdr(0, INT_MAX, NULL);
+			vr_unr = new_unrhdr(0, INT_MAX, NULL);
 			break;
 		case MOD_UNLOAD:
 			if (pcmsg_unrhdr != NULL) {
 				delete_unrhdr(pcmsg_unrhdr);
 				pcmsg_unrhdr = NULL;
+			}
+			if (p_unr != NULL) {
+				delete_unrhdr(p_unr);
+				p_unr = NULL;
+			}
+			if (vp_unr != NULL) {
+				delete_unrhdr(vp_unr);
+				vp_unr = NULL;
+			}
+			if (r_unr != NULL) {
+				delete_unrhdr(r_unr);
+				r_unr = NULL;
+			}
+			if (vr_unr != NULL) {
+				delete_unrhdr(vr_unr);
+				vr_unr = NULL;
 			}
 			break;
 		case MOD_SHUTDOWN:
