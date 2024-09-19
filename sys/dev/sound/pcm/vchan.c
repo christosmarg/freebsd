@@ -1065,6 +1065,7 @@ sysctl_hw_snd_maxautovchans(SYSCTL_HANDLER_ARGS)
 		if (v > SND_MAXVCHANS)
 			v = SND_MAXVCHANS;
 		snd_maxautovchans = v;
+		bus_topo_lock();
 		for (i = 0; pcm_devclass != NULL &&
 		    i < devclass_get_maxunit(pcm_devclass); i++) {
 			d = devclass_get_softc(pcm_devclass, i);
@@ -1074,11 +1075,12 @@ sysctl_hw_snd_maxautovchans(SYSCTL_HANDLER_ARGS)
 			vchan_setmaxauto(d, v);
 			PCM_RELEASE_QUICK(d);
 		}
+		bus_topo_unlock();
 	}
 	return (error);
 }
 SYSCTL_PROC(_hw_snd, OID_AUTO, maxautovchans,
-    CTLTYPE_INT | CTLFLAG_RWTUN | CTLFLAG_NEEDGIANT, 0, sizeof(int),
+    CTLTYPE_INT | CTLFLAG_RWTUN | CTLFLAG_MPSAFE, 0, sizeof(int),
     sysctl_hw_snd_maxautovchans, "I", "maximum virtual channel");
 
 void
