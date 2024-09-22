@@ -832,6 +832,51 @@ sound_oss_card_info(oss_card_info *si)
 
 /************************************************************************/
 
+static void
+sound_glob_init(void)
+{
+	if (snd_verbose < 0 || snd_verbose > 4)
+		snd_verbose = 1;
+
+	if (snd_unit < 0)
+		snd_unit = -1;
+
+	if (snd_maxautovchans < 0 ||
+	    snd_maxautovchans > SND_MAXVCHANS)
+		snd_maxautovchans = 0;
+
+	if (chn_latency < CHN_LATENCY_MIN ||
+	    chn_latency > CHN_LATENCY_MAX)
+		chn_latency = CHN_LATENCY_DEFAULT;
+
+	if (chn_latency_profile < CHN_LATENCY_PROFILE_MIN ||
+	    chn_latency_profile > CHN_LATENCY_PROFILE_MAX)
+		chn_latency_profile = CHN_LATENCY_PROFILE_DEFAULT;
+
+	if (feeder_rate_min < FEEDRATE_MIN ||
+		    feeder_rate_max < FEEDRATE_MIN ||
+		    feeder_rate_min > FEEDRATE_MAX ||
+		    feeder_rate_max > FEEDRATE_MAX ||
+		    !(feeder_rate_min < feeder_rate_max)) {
+		feeder_rate_min = FEEDRATE_RATEMIN;
+		feeder_rate_max = FEEDRATE_RATEMAX;
+	}
+
+	if (feeder_rate_round < FEEDRATE_ROUNDHZ_MIN ||
+		    feeder_rate_round > FEEDRATE_ROUNDHZ_MAX)
+		feeder_rate_round = FEEDRATE_ROUNDHZ;
+
+	if (bootverbose)
+		printf("%s: snd_unit=%d snd_maxautovchans=%d "
+		    "latency=%d "
+		    "feeder_rate_min=%d feeder_rate_max=%d "
+		    "feeder_rate_round=%d\n",
+		    __func__, snd_unit, snd_maxautovchans,
+		    chn_latency,
+		    feeder_rate_min, feeder_rate_max,
+		    feeder_rate_round);
+}
+
 static int
 sound_modevent(module_t mod, int type, void *data)
 {
@@ -839,40 +884,42 @@ sound_modevent(module_t mod, int type, void *data)
 
 	ret = 0;
 	switch (type) {
-		case MOD_LOAD:
-			pcm_devclass = devclass_create("pcm");
-			pcmsg_unrhdr = new_unrhdr(1, INT_MAX, NULL);
-			p_unr = new_unrhdr(0, INT_MAX, NULL);
-			vp_unr = new_unrhdr(0, INT_MAX, NULL);
-			r_unr = new_unrhdr(0, INT_MAX, NULL);
-			vr_unr = new_unrhdr(0, INT_MAX, NULL);
-			break;
-		case MOD_UNLOAD:
-			if (pcmsg_unrhdr != NULL) {
-				delete_unrhdr(pcmsg_unrhdr);
-				pcmsg_unrhdr = NULL;
-			}
-			if (p_unr != NULL) {
-				delete_unrhdr(p_unr);
-				p_unr = NULL;
-			}
-			if (vp_unr != NULL) {
-				delete_unrhdr(vp_unr);
-				vp_unr = NULL;
-			}
-			if (r_unr != NULL) {
-				delete_unrhdr(r_unr);
-				r_unr = NULL;
-			}
-			if (vr_unr != NULL) {
-				delete_unrhdr(vr_unr);
-				vr_unr = NULL;
-			}
-			break;
-		case MOD_SHUTDOWN:
-			break;
-		default:
-			ret = ENOTSUP;
+	case MOD_LOAD:
+		pcm_devclass = devclass_create("pcm");
+		pcmsg_unrhdr = new_unrhdr(1, INT_MAX, NULL);
+		p_unr = new_unrhdr(0, INT_MAX, NULL);
+		vp_unr = new_unrhdr(0, INT_MAX, NULL);
+		r_unr = new_unrhdr(0, INT_MAX, NULL);
+		vr_unr = new_unrhdr(0, INT_MAX, NULL);
+
+		sound_glob_init();
+		break;
+	case MOD_UNLOAD:
+		if (pcmsg_unrhdr != NULL) {
+			delete_unrhdr(pcmsg_unrhdr);
+			pcmsg_unrhdr = NULL;
+		}
+		if (p_unr != NULL) {
+			delete_unrhdr(p_unr);
+			p_unr = NULL;
+		}
+		if (vp_unr != NULL) {
+			delete_unrhdr(vp_unr);
+			vp_unr = NULL;
+		}
+		if (r_unr != NULL) {
+			delete_unrhdr(r_unr);
+			r_unr = NULL;
+		}
+		if (vr_unr != NULL) {
+			delete_unrhdr(vr_unr);
+			vr_unr = NULL;
+		}
+		break;
+	case MOD_SHUTDOWN:
+		break;
+	default:
+		ret = ENOTSUP;
 	}
 
 	return ret;
