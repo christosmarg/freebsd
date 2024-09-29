@@ -574,10 +574,9 @@ pcm_unregister(device_t dev)
 		d->rec_sysctl_tree = NULL;
 	}
 
+	pcm_killchans(d);
 	dsp_destroy_dev(dev);
 	(void)mixer_uninit(dev);
-
-	pcm_killchans(d);
 
 	PCM_LOCK(d);
 	PCM_RELEASE(d);
