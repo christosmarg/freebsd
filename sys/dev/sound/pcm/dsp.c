@@ -164,25 +164,6 @@ dsp_unlock_chans(struct dsp_cdevpriv *priv, uint32_t prio)
 #define DSP_F_READ(x)		((x) & FREAD)
 #define DSP_F_WRITE(x)		((x) & FWRITE)
 
-static const struct {
-	int type;
-	char *name;
-	char *sep;
-	char *alias;
-} dsp_cdevs[] = {
-	{ SND_DEV_DSP,         "dsp",	".",			NULL },
-	{ SND_DEV_DSPHW_PLAY,  "dsp",   ".play.",		NULL },
-	{ SND_DEV_DSPHW_VPLAY, "dsp",	".virtual_play.",	NULL },
-	{ SND_DEV_DSPHW_REC,   "dsp",   ".record.",		NULL },
-	{ SND_DEV_DSPHW_VREC,  "dsp",	".virtual_record.",	NULL },
-	/* Low priority, OSSv4 aliases. */
-	{ SND_DEV_DSP,      "dsp_ac3",   ".",			"dsp" },
-	{ SND_DEV_DSP,     "dsp_mmap",   ".",			"dsp" },
-	{ SND_DEV_DSP,  "dsp_multich",   ".",			"dsp" },
-	{ SND_DEV_DSP, "dsp_spdifout",   ".",			"dsp" },
-	{ SND_DEV_DSP,  "dsp_spdifin",   ".",			"dsp" },
-};
-
 static void
 dsp_close(void *data)
 {
@@ -1941,20 +1922,26 @@ dsp_mmap_single(struct cdev *i_dev, vm_ooffset_t *offset,
 	return (0);
 }
 
+static const char *dsp_aliases[] = {
+	"dsp_ac3",
+	"dsp_mmap",
+	"dsp_multich",
+	"dsp_spdifout",
+	"dsp_spdifin",
+};
+
 static void
 dsp_clone(void *arg, struct ucred *cred, char *name, int namelen,
     struct cdev **dev)
 {
 	struct snddev_info *d;
 	size_t i;
-
 	if (*dev != NULL)
 		return;
 	if (strcmp(name, "dsp") == 0 && dsp_basename_clone)
 		goto found;
-	for (i = 0; i < nitems(dsp_cdevs); i++) {
-		if (dsp_cdevs[i].alias != NULL &&
-		    strcmp(name, dsp_cdevs[i].name) == 0)
+	for (i = 0; i < nitems(dsp_aliases); i++) {
+		if (strcmp(name, dsp_aliases[i]) == 0)
 			goto found;
 	}
 	return;
@@ -1993,26 +1980,6 @@ dsp_sysuninit(void *p)
 
 SYSINIT(dsp_sysinit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, dsp_sysinit, NULL);
 SYSUNINIT(dsp_sysuninit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, dsp_sysuninit, NULL);
-
-char *
-dsp_unit2name(char *buf, size_t len, struct pcm_channel *ch)
-{
-	size_t i;
-
-	KASSERT(buf != NULL && len != 0,
-	    ("bogus buf=%p len=%ju", buf, (uintmax_t)len));
-
-	for (i = 0; i < nitems(dsp_cdevs); i++) {
-		if (ch->type != dsp_cdevs[i].type || dsp_cdevs[i].alias != NULL)
-			continue;
-		snprintf(buf, len, "%s%d%s%d",
-		    dsp_cdevs[i].name, device_get_unit(ch->dev),
-		    dsp_cdevs[i].sep, ch->unit);
-		return (buf);
-	}
-
-	return (NULL);
-}
 
 static void
 dsp_oss_audioinfo_unavail(oss_audioinfo *ai, int unit)
@@ -2270,11 +2237,11 @@ dsp_oss_engineinfo(struct cdev *i_dev, oss_audioinfo *ai)
 			if (ai->dev == -1) {
 				if (devfs_foreach_cdevpriv(i_dev,
 				    dsp_oss_engineinfo_cb, ch) != 0) {
-					devname = dsp_unit2name(buf,
+					devname = chn_mkname(buf,
 					    sizeof(buf), ch);
 				}
 			} else if (ai->dev == nchan)
-				devname = dsp_unit2name(buf, sizeof(buf), ch);
+				devname = chn_mkname(buf, sizeof(buf), ch);
 			if (devname != NULL)
 				break;
 			CHN_UNLOCK(ch);
