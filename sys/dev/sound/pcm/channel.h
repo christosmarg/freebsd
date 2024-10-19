@@ -335,10 +335,10 @@ extern int chn_latency_profile;
 extern int report_soft_formats;
 extern int report_soft_matrix;
 
-#define PCMDIR_PLAY		1
-#define PCMDIR_PLAY_VIRTUAL	2
-#define PCMDIR_REC		-1
-#define PCMDIR_REC_VIRTUAL	-2
+#define PCMDIR_PLAY		0
+#define PCMDIR_PLAY_VIRTUAL	1
+#define PCMDIR_REC		2
+#define PCMDIR_REC_VIRTUAL	3
 
 #define PCMTRIG_START 1
 #define PCMTRIG_EMLDMAWR 2
